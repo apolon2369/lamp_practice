@@ -48,6 +48,21 @@ function set_session($name, $value){
   $_SESSION[$name] = $value;
 }
 
+// ランダムな30字の文字列を生成し、セッションに保存して返す。
+function get_csrf_token(){
+  $token = get_random_string(30);
+  set_session('csrf_token', $token);
+  return $token;
+}
+
+// $tokenが空ならばfalse,セッションで取得した値と$tokenを見比べてtrue,falseを返す
+function is_vaild_csrf_token($token){
+  if($token === '') {
+    return false;
+  }
+  return $token === get_session('csrf_token');
+}
+
 // エラー？
 function set_error($error){
   $_SESSION['__errors'][] = $error;

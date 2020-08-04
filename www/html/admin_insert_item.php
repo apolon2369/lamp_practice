@@ -18,6 +18,10 @@ if(is_admin($user) === false){
   redirect_to(LOGIN_URL);
 }
 
+if(is_vaild_csrf_token(get_post('csrf_token')) === false){
+  redirect_to(LOGIN_URL);
+}
+
 $name = get_post('name');
 $price = get_post('price');
 $status = get_post('status');

@@ -15,10 +15,10 @@ function get_item($db, $item_id){
     FROM
       items
     WHERE
-      item_id = {$item_id}
+      item_id = ?
   ";
 
-  return fetch_query($db, $sql);
+  return fetch_query($db, $sql, array($item_id));
 }
 
 // SELECT文で全てを配列に格納
@@ -88,10 +88,10 @@ function insert_item($db, $name, $price, $stock, $filename, $status){
         image,
         status
       )
-    VALUES('{$name}', {$price}, {$stock}, '{$filename}', {$status_value});
+    VALUES(?, ?, ?, ?, ?);
   ";
 
-  return execute_query($db, $sql);
+  return execute_query($db, $sql, array($name, $price, $stock, $filename, $status_value));
 }
 
 // UPDATE文を作成し、statusを更新して実行
@@ -100,13 +100,13 @@ function update_item_status($db, $item_id, $status){
     UPDATE
       items
     SET
-      status = {$status}
+      status = ?
     WHERE
-      item_id = {$item_id}
+      item_id = ?
     LIMIT 1
   ";
   
-  return execute_query($db, $sql);
+  return execute_query($db, $sql, array($status, $item_id));
 }
 
 // UPDATE文を作成し、stockを更新して実行
@@ -115,13 +115,13 @@ function update_item_stock($db, $item_id, $stock){
     UPDATE
       items
     SET
-      stock = {$stock}
+      stock = ?
     WHERE
-      item_id = {$item_id}
+      item_id = ?
     LIMIT 1
   ";
   
-  return execute_query($db, $sql);
+  return execute_query($db, $sql, array($stock, $item_id));
 }
 
 // アイテムの内容を取得し、トランザクションを開始。
@@ -131,7 +131,7 @@ function destroy_item($db, $item_id){
     return false;
   }
   $db->beginTransaction();
-  if(mdelete_ite($db, $item['item_id'])
+  if(delete_item($db, $item['item_id'])
     && delete_image($item['image'])){
     $db->commit();
     return true;
@@ -146,11 +146,11 @@ function delete_item($db, $item_id){
     DELETE FROM
       items
     WHERE
-      item_id = {$item_id}
+      item_id = ?
     LIMIT 1
   ";
   
-  return execute_query($db, $sql);
+  return execute_query($db, $sql, array($item_id));
 }
 
 
