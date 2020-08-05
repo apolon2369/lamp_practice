@@ -2,8 +2,7 @@
 require_once MODEL_PATH . 'functions.php';
 require_once MODEL_PATH . 'db.php';
 
-// DB利用
-
+// DB利用しデータを配列として取得
 function get_item($db, $item_id){
   $sql = "
     SELECT
@@ -16,12 +15,13 @@ function get_item($db, $item_id){
     FROM
       items
     WHERE
-      item_id = {$item_id}
+      item_id = ?
   ";
 
-  return fetch_query($db, $sql);
+  return fetch_query($db, $sql, array($item_id));
 }
 
+// SELECT文で全てを配列に格納
 function get_items($db, $is_open = false){
   $sql = '
     SELECT
@@ -43,14 +43,18 @@ function get_items($db, $is_open = false){
   return fetch_all_query($db, $sql);
 }
 
+// 全てを取得？
 function get_all_items($db){
   return get_items($db);
 }
 
+// statusが1の表示されているものだけを取得？
 function get_open_items($db){
   return get_items($db, true);
 }
 
+// 画像ファイル名の文字列をランダム生成したものに変換し、アイテムの内容がfalseだとfalseを返す。
+// trueの場合、下の関数を実行し成功すればtrueを返す。
 function regist_item($db, $name, $price, $stock, $status, $image){
   $filename = get_upload_filename($image);
   if(validate_item($name, $price, $stock, $filename, $status) === false){
@@ -59,6 +63,7 @@ function regist_item($db, $name, $price, $stock, $status, $image){
   return regist_item_transaction($db, $name, $price, $stock, $status, $image, $filename);
 }
 
+// 上の関数に入れる用。トランザクションを開始しINSET文を作成、実行。アップロードした画像を保存。
 function regist_item_transaction($db, $name, $price, $stock, $status, $image, $filename){
   $db->beginTransaction();
   if(insert_item($db, $name, $price, $stock, $filename, $status) 
@@ -71,6 +76,7 @@ function regist_item_transaction($db, $name, $price, $stock, $status, $image, $f
   
 }
 
+// 上の関数に入れる用。INSERT文を作成し、実行
 function insert_item($db, $name, $price, $stock, $filename, $status){
   $status_value = PERMITTED_ITEM_STATUSES[$status];
   $sql = "
@@ -82,40 +88,43 @@ function insert_item($db, $name, $price, $stock, $filename, $status){
         image,
         status
       )
-    VALUES('{$name}', {$price}, {$stock}, '{$filename}', {$status_value});
+    VALUES(?, ?, ?, ?, ?);
   ";
 
-  return execute_query($db, $sql);
+  return execute_query($db, $sql, array($name, $price, $stock, $filename, $status_value));
 }
 
+// UPDATE文を作成し、statusを更新して実行
 function update_item_status($db, $item_id, $status){
   $sql = "
     UPDATE
       items
     SET
-      status = {$status}
+      status = ?
     WHERE
-      item_id = {$item_id}
+      item_id = ?
     LIMIT 1
   ";
   
-  return execute_query($db, $sql);
+  return execute_query($db, $sql, array($status, $item_id));
 }
 
+// UPDATE文を作成し、stockを更新して実行
 function update_item_stock($db, $item_id, $stock){
   $sql = "
     UPDATE
       items
     SET
-      stock = {$stock}
+      stock = ?
     WHERE
-      item_id = {$item_id}
+      item_id = ?
     LIMIT 1
   ";
   
-  return execute_query($db, $sql);
+  return execute_query($db, $sql, array($stock, $item_id));
 }
 
+// アイテムの内容を取得し、トランザクションを開始。
 function destroy_item($db, $item_id){
   $item = get_item($db, $item_id);
   if($item === false){
@@ -131,16 +140,17 @@ function destroy_item($db, $item_id){
   return false;
 }
 
+// 上の関数に入れる。DELETE文を作成し、item_idにマッチするものを削除、実行。
 function delete_item($db, $item_id){
   $sql = "
     DELETE FROM
       items
     WHERE
-      item_id = {$item_id}
+      item_id = ?
     LIMIT 1
   ";
   
-  return execute_query($db, $sql);
+  return execute_query($db, $sql, array($item_id));
 }
 
 
@@ -150,6 +160,7 @@ function is_open($item){
   return $item['status'] === 1;
 }
 
+// アイテムの内容を変数に入れて返す
 function validate_item($name, $price, $stock, $filename, $status){
   $is_valid_item_name = is_valid_item_name($name);
   $is_valid_item_price = is_valid_item_price($price);
@@ -164,6 +175,7 @@ function validate_item($name, $price, $stock, $filename, $status){
     && $is_valid_item_status;
 }
 
+// 文字列の長さを検証し、エラーが出ればfalseでなければtrueで返す
 function is_valid_item_name($name){
   $is_valid = true;
   if(is_valid_length($name, ITEM_NAME_LENGTH_MIN, ITEM_NAME_LENGTH_MAX) === false){
@@ -173,6 +185,7 @@ function is_valid_item_name($name){
   return $is_valid;
 }
 
+// 正規表現でチェックし、エラーがなければtrueで返す
 function is_valid_item_price($price){
   $is_valid = true;
   if(is_positive_integer($price) === false){
@@ -182,6 +195,7 @@ function is_valid_item_price($price){
   return $is_valid;
 }
 
+// 正規表現でチェックし、エラーがなければtrueで返す
 function is_valid_item_stock($stock){
   $is_valid = true;
   if(is_positive_integer($stock) === false){
@@ -191,6 +205,7 @@ function is_valid_item_stock($stock){
   return $is_valid;
 }
 
+// 空文字出なかったらtrueを返す
 function is_valid_item_filename($filename){
   $is_valid = true;
   if($filename === ''){
@@ -199,6 +214,7 @@ function is_valid_item_filename($filename){
   return $is_valid;
 }
 
+// アイテムのステータスをチェックし0,1以外ならfalseを返しどちらかならtrueを返す
 function is_valid_item_status($status){
   $is_valid = true;
   if(isset(PERMITTED_ITEM_STATUSES[$status]) === false){
